@@ -408,15 +408,24 @@ def conv_backward_naive(dout, cache):
 
     # initialize
     db = np.sum(dout, axis = (0,2,3))
-    for i in range(H_prime):
-        for j in range(W_prime):# dout/dw = 
-            x_used = x_pad[:, :, i*stride:i*stride + HH, j*stride:j*stride + WW]
-            for f in range(F):
-                dw[f, :, :, :] = np.sum(x_used * (dout[:, f, i, j])[:, None, None, None], axis = 0)
-            for n in range(N):
-                dx_pad[n, :, i*stride:i*stride+HH, j*stride:j*stride+WW] += np.sum((w[:, :, :, :] * (dout[n, :, i, j])[:,None ,None, None]), axis=0)
+    # for i in range(H_prime):
+    #     for j in range(W_prime):# dout/dw = 
+    #         x_used = x_pad[:, :, i*stride:i*stride + HH, j*stride:j*stride + WW]
+    #         for f in range(F):
+    #             dw[f, :, :, :] = np.sum(x_used * (dout[:, f, i, j])[:, None, None, None], axis = 0)
+    #         for n in range(N):
+    #             dx_pad[n, :, i*stride:i*stride+HH, j*stride:j*stride+WW] += np.sum((w[:, :, :, :] * (dout[n, :, i, j])[:,None ,None, None]), axis=0)
     
-    dx = dx_pad[:, :, pad:-pad, pad:-pad]
+    # dx = dx_pad[:, :, pad:-pad, pad:-pad]
+    for n in range(N):
+        dx_pad = np.pad(dx[n,:,:,:], ((0,0),(pad,pad),(pad,pad)))
+        for f in range(F):
+            for i in range(H_prime):
+                for j in range(W_prime):
+                    x_used = x_pad[n, :, i*stride:i*stride + HH, j*stride:j*stride + WW]
+                    dx_pad[:, i*stride:i*stride + HH, j*stride:j*stride + WW] += w[f,:,:,:] * dout[n,f,i,j]
+                    dw[f,:,:,:] += x_used * dout[n,f,i,j]
+        dx[n,:,:,:] = dx_pad[:,1:-1,1:-1]
     #############################################################################
     #                             END OF YOUR CODE                              #
     #############################################################################
